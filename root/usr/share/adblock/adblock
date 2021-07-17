@@ -31,7 +31,7 @@ down(){
 	mkdir -p $G
 	for i in $U;do
 		X=1
-		while ! curl --connect-timeout 5 -m 20 -Lfso $F $i;do
+		while ! uclient-fetch --no-check-certificate --timeout=5 --continue --quiet -O $F $i;do
 			[ $X -ge 20 ] && echo "`eval $E` [Download $i Failed]" && continue 2 || let X++
 			sleep 2
 		done
@@ -93,7 +93,7 @@ case $1 in
 esac
 
 if [ `uci -q get adblock.@adblock[0].enable` = 1 ];then
-	G=`curl -LSfso /tmp/adnew.conf https://cdn.jsdelivr.net/gh/small-5/ad-rules/easylistchina+easylist.txt 2>&1 || curl -LSfso /tmp/adnew.conf https://easylist-downloads.adblockplus.org/easylistchina+easylist.txt 2>&1`
+	G=`uclient-fetch --no-check-certificate --timeout=5 --continue --quiet -O /tmp/adnew.conf https://cdn.jsdelivr.net/gh/small-5/ad-rules/easylistchina+easylist.txt 2>&1 || uclient-fetch --no-check-certificate --timeout=5 --continue --quiet -O /tmp/adnew.conf https://easylist-downloads.adblockplus.org/easylistchina+easylist.txt 2>&1`
 	if [ $? = 0 ];then
 		echo "`eval $E` [$A Successful]"
 		gen

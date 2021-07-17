@@ -13,7 +13,7 @@ define Package/$(PKG_NAME)
   CATEGORY:=LuCI
   SUBMENU:=3. Applications
   TITLE:=LuCI support for Adblock Plus+
-  DEPENDS:=+curl +dnsmasq-full +ipset +luci-compat
+  DEPENDS:=+uclient-fetch +ipset +dnsmasq-full
   PKGARCH:=all
 endef
 
