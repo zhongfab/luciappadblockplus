@@ -29,25 +29,16 @@ end
 o.default=6
 o:depends("cron_mode",1)
 
-if nixio.fs.access("/tmp/adblock/adblock.conf") then
-UD=SYS.exec("cat /tmp/adblock/adblock.updated 2>/dev/null")
-ad_count=tonumber(SYS.exec("cat /tmp/adblock/adblock.conf | wc -l"))
-o=s:option(DummyValue,"0",translate("Adblock Plus Data"))
-o.rawhtml=true
-o.template="adblock/refresh"
-o.value=ad_count.." "..translate("Records")
-o.description=string.format("<strong>"..translate("Last Update Checked")..":</strong> %s<br/>",UD)
-end
-
 tmp_rule=0
 if nixio.fs.access("/tmp/adblock/3rd/3rd.conf") then
+UD=SYS.exec("cat /tmp/adblock/adblock.updated 2>/dev/null")
 tmp_rule=1
 rule_count=tonumber(SYS.exec("find /tmp/adblock/3rd -name 3* -exec cat {} \\; 2>/dev/null | wc -l"))
 o=s:option(DummyValue,"1",translate("Subscribe 3rd Rules Data"))
 o.rawhtml=true
 o.template="adblock/refresh"
 o.value=rule_count.." "..translate("Records")
-o.description=translate("AdGuardHome / Host / DNSMASQ rules auto-convert<br/>Automatically remove duplicate rules(including Adblock Plus Rules)")
+o.description=string.format(translate("AdGuardHome / Host / DNSMASQ / Domain rules auto-convert").."<br/><strong>"..translate("Last Update Checked")..":</strong> %s<br/>",UD)
 end
 
 o=s:option(Flag,"flash")
@@ -78,7 +69,9 @@ if luci.sys.call("[ -h /tmp/adblock/3rd/url ] || exit 9")==9 then
 end
 
 o=s:option(DynamicList,"url",translate("Anti-AD Rules Subscribe"))
-o:value("https://cdn.jsdelivr.net/gh/small-5/ad-rules/adguard","AdGuard")
 o:value("https://cdn.jsdelivr.net/gh/small-5/ad-rules/anti-ad","anti-AD")
+o:value("https://cdn.jsdelivr.net/gh/small-5/ad-rules/adguard","AdGuard")
+o:value("https://cdn.jsdelivr.net/gh/small-5/ad-rules/dnsmasq.adblock","dnsmasqAdblock")
+o:value("https://cdn.jsdelivr.net/gh/small-5/ad-rules/easylistchina+easylist.txt","easylistchina+easylist")
 
 return m

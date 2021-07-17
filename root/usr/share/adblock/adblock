@@ -1,5 +1,5 @@
 #!/bin/sh
-# 防止重复启动
+# Prevent repeated starts
 LOCK=/var/lock/adblock.lock
 if [ -f $LOCK ];then
 	case $1 in
@@ -29,6 +29,7 @@ down(){
 	F=$G/ad_new.conf
 	rm -rf ${G%/*}
 	mkdir -p $G
+	COUNT_URL=0
 	for i in $U;do
 		X=1
 		while ! uclient-fetch --no-check-certificate --timeout=5 --continue --quiet -O $F $i;do
@@ -49,11 +50,12 @@ down(){
 		fi
 		[ "$X" = "`md5sum $G/3rd.conf 2>/dev/null | awk '{print$1}'`" -a "$Y" = "`md5sum $G/host 2>/dev/null | awk '{print$1}'`" ] && echo "`eval $E` [Conversion $i Failed]"
 		echo $i >> $G/url
+		let COUNT_URL++
 	done
 	[ -s $G/host ] && sed -e '/:/d' -e '/ 0.0.0.0/d' -e '/255.255.255.255/d' -e '/ local/d' -e 's:127.0.0.1 :address=/:' -e 's:0.0.0.0 :address=/:' -e 's:$:/:' $G/host >> $G/3rd.conf
-	[ -s $G/3rd.conf ] && sed -i -e 's:/127.0.0.1$:/:' -e 's:/0.0.0.0$:/:' $G/3rd.conf && echo "`sort -u $G/3rd.conf`" > $G/3rd.conf
+	[ -s $G/3rd.conf ] && sed -i -e 's:/127.0.0.1$:/:' -e 's:/0.0.0.0$:/:' $G/3rd.conf && [ $COUNT_URL -gt 1 ] && echo "`sort -u $G/3rd.conf`" > $G/3rd.conf
 	[ -s $G/url ] && echo "`sort -u $G/url`" > $G/url
-	if [ -s $G/3rd.conf -a -s $P/adblock.conf ];then
+	if [ -s $G/3rd.conf -a -s $P/adblock.conf ] && [ $COUNT_URL -gt 1 ];then
 		echo "`sort -u $G/3rd.conf $P/adblock.conf`" > $G/3rd.conf
 		echo "`sort $G/3rd.conf $P/adblock.conf | uniq -u`" > $G/3rd.conf
 	fi
@@ -93,22 +95,6 @@ case $1 in
 esac
 
 if [ `uci -q get adblock.@adblock[0].enable` = 1 ];then
-	G=`uclient-fetch --no-check-certificate --timeout=5 --continue --quiet -O /tmp/adnew.conf https://cdn.jsdelivr.net/gh/small-5/ad-rules/easylistchina+easylist.txt 2>&1 || uclient-fetch --no-check-certificate --timeout=5 --continue --quiet -O /tmp/adnew.conf https://easylist-downloads.adblockplus.org/easylistchina+easylist.txt 2>&1`
-	if [ $? = 0 ];then
-		echo "`eval $E` [$A Successful]"
-		gen
-		if ! cmp -s /tmp/ad.conf $P/adblock.conf;then
-			echo "`eval $E` [Adblock Plus Rules Need Update]"
-			mv -f /tmp/ad.conf $P/adblock.conf
-			C=1
-		else
-			echo "`eval $E` [Adblock Plus Rules No Change]"
-		fi
-	else
-		echo "`eval $E` [$A Failed]"
-		echo -e "$G\n"
-	fi
-	rm -f /tmp/ad.conf
 	[ -n "$U" ] && down
 	echo `eval $E` > $P/adblock.updated
 fi

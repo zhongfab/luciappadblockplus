@@ -23,32 +23,7 @@ function act_status()
 end
 
 function refresh_data()
-local set=luci.http.formvalue("set")
-local icount=0
-
-if set=="0" then
-	sret=luci.sys.call("uclient-fetch --no-check-certificate --timeout=5 --continue --quiet -O /tmp/adnew.conf https://cdn.jsdelivr.net/gh/small-5/ad-rules/easylistchina+easylist.txt || uclient-fetch --no-check-certificate --timeout=5 --continue --quiet -O /tmp/adnew.conf https://easylist-downloads.adblockplus.org/easylistchina+easylist.txt")
-	if sret==0 then
-		luci.sys.call("/usr/share/adblock/adblock gen")
-		icount=luci.sys.exec("cat /tmp/ad.conf | wc -l")
-		if tonumber(icount)>0 then
-			oldcount=luci.sys.exec("cat /tmp/adblock/adblock.conf | wc -l")
-			if tonumber(icount) ~= tonumber(oldcount) then
-				luci.sys.exec("mv -f /tmp/ad.conf /tmp/adblock/adblock.conf")
-				luci.sys.exec("/etc/init.d/dnsmasq restart &")
-				retstring=tostring(math.ceil(tonumber(icount)))
-			else
-				retstring=0
-			end
-			luci.sys.call("echo `date +'%Y-%m-%d %H:%M:%S'` > /tmp/adblock/adblock.updated")
-		else
-			retstring="-1"
-		end
-		luci.sys.exec("rm -f /tmp/ad.conf")
-	else
-		retstring="-1"
-	end
-else
+	local icount=0
 	luci.sys.exec("/usr/share/adblock/adblock down")
 	icount=luci.sys.exec("find /tmp/ad_tmp/3rd -name 3* -exec cat {} \\; 2>/dev/null | wc -l")
 	if tonumber(icount)>0 then
@@ -65,7 +40,7 @@ else
 		retstring="-1"
 	end
 	luci.sys.exec("rm -rf /tmp/ad_tmp")
-end
+
 	luci.http.prepare_content("application/json")
 	luci.http.write_json({ret=retstring,retcount=icount})
 end
