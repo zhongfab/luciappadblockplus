@@ -9,10 +9,7 @@ if [ -f $LOCK ];then
 fi
 touch $LOCK
 
-A="Download Adblock Plus Rules"
 B="Download Subscribe Rules"
-C=0
-D=0
 E="date +'%Y-%m-%d %H:%M:%S'"
 U=`uci -q get adblock.@adblock[0].url`
 P=/tmp/adblock
@@ -97,11 +94,6 @@ esac
 if [ `uci -q get adblock.@adblock[0].enable` = 1 ];then
 	[ -n "$U" ] && down
 	echo `eval $E` > $P/adblock.updated
-fi
-
-if [ $C = 1 -o $D = 1 ];then
-	echo "`eval $E` [Reload Adblock Plus Rules]"
-	/etc/init.d/adblock restart
 fi
 
 rm -f $LOCK

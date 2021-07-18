@@ -5,14 +5,17 @@ LOCK=/var/lock/adblock.lock
 [ -f $LOCK ] && exit 1
 touch $LOCK
 
-A=0
 B=/tmp/adblock
 C=/tmp/adupdate.log
 D="date +'%Y-%m-%d %H:%M:%S'"
+_3RD_URL=`uci -q get adblock.@adblock[0].url`
 
 mkdir -p $B
 echo "" > $B/adblock.conf
 for i in $(cat /etc/adblock/white.list);do sed -i -e "/\/$i\//d" -e "/\.$i\//d" $B/adblock.conf;done
+
+[ ! -n "$_3RD_URL" ] && echo "`eval $D` [Subscription is empty]" > $C && exit 0
+
 echo "`eval $D` [Check network status]" > $C
 uclient-fetch --no-check-certificate --timeout=5 --quiet https://www.baidu.com -O /dev/null
 while [ $? -ne 0 ];do
@@ -23,6 +26,5 @@ echo "`eval $D` [Check network status Successful]" >> $C
 echo "`eval $D` [Download Subscribe Rules]" >> $C
 /usr/share/adblock/adblock addown >> $C
 
-[ $A = 1 ] && echo "`eval $D` [$E Failed]" >> $C || (echo "`eval $D` [Start Adblock Plus+]" >> $C;echo "`eval $D`" > $B/adblock.updated)
 rm -f $LOCK
 /etc/init.d/adblock start &
