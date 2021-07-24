@@ -17,20 +17,20 @@ end
 
 function act_status()
 	local e={}
-	e.running=luci.sys.call("[ -s /tmp/dnsmasq.adblock/adblock.conf ]")==0
+	e.running=luci.sys.call("[ -s /tmp/dnsmasq.adblock/3rd.conf ]")==0
 	luci.http.prepare_content("application/json")
 	luci.http.write_json(e)
 end
 
 function refresh_data()
 	local icount=0
-	luci.sys.exec("/usr/share/adblock/adblock down")
+	luci.sys.exec("/usr/share/adblock/adblock down >> /tmp/adupdate.log")
 	icount=luci.sys.exec("find /tmp/ad_tmp/3rd -name 3* -exec cat {} \\; 2>/dev/null | wc -l")
 	if tonumber(icount)>0 then
 		oldcount=luci.sys.exec("find /tmp/adblock/3rd -name 3* -exec cat {} \\; 2>/dev/null | wc -l")
 		if tonumber(icount) ~= tonumber(oldcount) then
 			luci.sys.exec("[ -h /tmp/adblock/3rd/url ] && (rm -f /etc/adblock/3rd/*;cp -a /tmp/ad_tmp/3rd /etc/adblock) || (rm -f /tmp/adblock/3rd/*;cp -a /tmp/ad_tmp/3rd /tmp/adblock)")
-			luci.sys.exec("/etc/init.d/adblock restart &")
+			luci.sys.exec("/etc/init.d/adblock restart >> /tmp/adupdate.log &")
 			retstring=tostring(math.ceil(tonumber(icount)))
 		else
 			retstring=0

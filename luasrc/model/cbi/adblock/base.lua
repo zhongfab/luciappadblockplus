@@ -51,7 +51,7 @@ o=s:option(Button,"delete",translate("Delete All Subscribe Rules"))
 o.inputstyle="reset"
 o.description=translate("Delete 3rd rules files and delete the subscription link<br/>There is no need to click for modify the subscription link,The script will automatically replace the old rule file")
 o.write=function()
-	SYS.exec("[ -d /etc/adblock/3rd ] && rm -rf /etc/adblock/3rd")
+	SYS.exec("[ -d /tmp/adblock/3rd ] && rm -rf /tmp/adblock/3rd")
 	SYS.exec("grep -wq 'list url' /etc/config/adblock && sed -i '/list url/d' /etc/config/adblock && /etc/init.d/adblock restart 2>&1 &")
 	luci.http.redirect(luci.dispatcher.build_url("admin","services","adblock","base"))
 end
@@ -69,9 +69,9 @@ if luci.sys.call("[ -h /tmp/adblock/3rd/url ] || exit 9")==9 then
 end
 
 o=s:option(DynamicList,"url",translate("Anti-AD Rules Subscribe"))
-o:value("https://cdn.jsdelivr.net/gh/small-5/ad-rules/anti-ad","anti-AD")
+o:value("https://cdn.jsdelivr.net/gh/privacy-protection-tools/anti-AD@master/adblock-for-dnsmasq.conf","anti-AD")
 o:value("https://cdn.jsdelivr.net/gh/small-5/ad-rules/adguard","AdGuard")
-o:value("https://cdn.jsdelivr.net/gh/small-5/ad-rules/dnsmasq.adblock","dnsmasqAdblock")
-o:value("https://cdn.jsdelivr.net/gh/small-5/ad-rules/easylistchina+easylist.txt","easylistchina+easylist")
+o:value("https://cdn.jsdelivr.net/gh/small-5/ad-rules/dnsmasq.adblock","DnsmasqAdblock")
+o:value("https://cdn.jsdelivr.net/gh/small-5/ad-rules/easylistchina+easylist.txt","Easylistchina+Easylist")
 
 return m
