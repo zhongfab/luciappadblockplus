@@ -5,26 +5,28 @@ LOCK=/var/lock/adblock.lock
 [ -f $LOCK ] && exit 1
 touch $LOCK
 
-B=/tmp/adblock
-C=/tmp/adupdate.log
-D="date +'%Y-%m-%d %H:%M:%S'"
-_3RD_URL=`uci -q get adblock.@adblock[0].url`
+AD_WORK_PATH=/tmp/adblock
+LOG=/tmp/adupdate.log
+FMT_DATE="date +'%Y-%m-%d %H:%M:%S'"
+_3RD_URL="$(uci -q get adblock.@adblock[0].url)"
 
-mkdir -p $B
-echo "" > $B/adblock.conf
-for i in $(cat /etc/adblock/white.list);do sed -i -e "/\/$i\//d" -e "/\.$i\//d" $B/adblock.conf;done
+mkdir -p $AD_WORK_PATH
 
-[ ! -n "$_3RD_URL" ] && echo "`eval $D` [Subscription is empty]" > $C && exit 0
+[ -z "$_3RD_URL" ] && echo "$(eval "$FMT_DATE") [Subscription is empty]" >$LOG && exit 0
 
-echo "`eval $D` [Check network status]" > $C
+echo "$(eval "$FMT_DATE") [Check network status]" >$LOG
 uclient-fetch --no-check-certificate --timeout=5 --quiet https://www.baidu.com -O /dev/null
-while [ $? -ne 0 ];do
-	cat $C | grep -q Wait || echo "`eval $D` [Wait for network to connect]" >> $C
-	sleep 2
+while [ $? -ne 0 ]; do
+    cat $LOG | grep -q Wait || echo "$(eval "$FMT_DATE") [Wait for network to connect]" >>$LOG
+    sleep 2
 done
-echo "`eval $D` [Check network status Successful]" >> $C
-echo "`eval $D` [Download Subscribe Rules]" >> $C
-/usr/share/adblock/adblock addown >> $C
+echo "$(eval "$FMT_DATE") [Check network status Successful]" >>$LOG
+echo "$(eval "$FMT_DATE") [Download Subscribe Rules]" >>$LOG
+/usr/share/adblock/adblock addown >>$LOG
 
+if [ ! -s $AD_WORK_PATH/failed ]; then
+    echo "$(eval "$FMT_DATE") [Start Adblock Plus+]" >>$LOG
+    echo "$(eval "$FMT_DATE")" >$AD_WORK_PATH/adblock.updated
+    /etc/init.d/adblock start >>$LOG &
+fi
 rm -f $LOCK
-/etc/init.d/adblock start &
