@@ -38,7 +38,7 @@ down() {
             --timeout=5 --continue --quiet -O $tmp_ad_new "$url"; do
             [ $times -le 0 ] &&
                 echo "$(eval "$FMT_DATE") [Download $url Failed]" &&
-                continue 2 || times=$((times = times - 1))
+                continue 2 || times=$((times - 1))
             sleep 2
         done
         X=$(md5sum $down_tmp_path/3rd.conf 2>/dev/null | awk '{print$1}')
