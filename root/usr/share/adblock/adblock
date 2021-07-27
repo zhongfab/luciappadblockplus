@@ -44,7 +44,7 @@ down() {
         elif grep -q -e "^0.0.0.0 " -e "^127.0.0.1 " $tmp_ad_new; then
             cat $tmp_ad_new >>$tmp_add/host
         elif ! grep -q -e "|" -e "@" $tmp_ad_new; then
-            sed -e 's:^:address=/:' -e 's:$:/:' < $tmp_ad_new >>$tmp_add/3rd.conf
+            sed -e 's:^:address=/:' -e 's:$:/:' <$tmp_ad_new >>$tmp_add/3rd.conf
         else
             grep ^\|\|[^\*]*\^$ ${tmp_ad_new} | grep -Ev "^\|\|[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}*" | sed -e 's:||:address=/:' -e 's:\^:/:' >>$tmp_add/3rd.conf
         fi
