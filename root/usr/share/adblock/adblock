@@ -18,7 +18,7 @@ AD_WORK_PATH=/tmp/adblock
 W="$(cat /etc/adblock/white.list)"
 
 gen() {
-    grep ^\|\|[^\*]*\^$ /tmp/adnew.conf | grep -Ev "^\|\|[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}*" | sed -e 's:||:address=/:' -e 's:\^:/:' >/tmp/ad.conf
+    grep -e "^||[^*]*^$" /tmp/adnew.conf | grep -Ev "^\|\|[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}*" | sed -e 's:||:address=/:' -e 's:\^:/:' >/tmp/ad.conf
     for i in $W; do sed -i -e "/\/$i\//d" -e "/\.$i\//d" /tmp/ad.conf; done
     rm -f /tmp/adnew.conf
 }
@@ -46,7 +46,7 @@ down() {
         elif ! grep -q -e "|" -e "@" $tmp_ad_new; then
             sed -e 's:^:address=/:' -e 's:$:/:' <$tmp_ad_new >>$tmp_add/3rd.conf
         else
-            grep ^\|\|[^\*]*\^$ ${tmp_ad_new} | grep -Ev "^\|\|[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}*" | sed -e 's:||:address=/:' -e 's:\^:/:' >>$tmp_add/3rd.conf
+            grep -e "^||[^*]*^$" ${tmp_ad_new} | grep -Ev "^\|\|[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}*" | sed -e 's:||:address=/:' -e 's:\^:/:' >>$tmp_add/3rd.conf
         fi
         [ "$X" = "$(md5sum $tmp_add/3rd.conf 2>/dev/null | awk '{print$1}')" -a "$Y" = "$(md5sum $tmp_add/host 2>/dev/null | awk '{print$1}')" ] && echo "$(eval "$FMT_DATE") [Conversion $url Failed]"
         echo "$url" >>$tmp_add/url
