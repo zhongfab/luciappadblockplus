@@ -17,7 +17,7 @@ function f.handle(self, state, data)
         else
             luci.sys.call('> /etc/adblock/white.list')
         end
-        luci.sys.exec('/usr/share/adblock/adwhile >>/tmp/adupdate.log &')
+        luci.sys.exec('/usr/share/adblock/adwhite >>/tmp/adupdate.log &')
     end
     return true
 end

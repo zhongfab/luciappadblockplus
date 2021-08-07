@@ -1,6 +1,6 @@
 #!/bin/sh
 # Prevent repeated starts
-readonly LOCK=/var/lock/adwhile.lock
+readonly LOCK=/var/lock/adwhite.lock
 [ -f $LOCK ] && exit 1
 touch $LOCK
 FMT_DT="date +'%Y-%m-%d %H:%M:%S'"
