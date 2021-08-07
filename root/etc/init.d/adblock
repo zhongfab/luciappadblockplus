@@ -3,18 +3,20 @@ START=99
 STOP=10
 PID=$$
 readonly TMP_PATH=/tmp/${PID}
-CRON_FILE=/etc/crontabs/root
-AD_LN_PATH=/tmp/dnsmasq.adblock
-FMT_DATE="date +'%Y-%m-%d %H:%M:%S'"
-AD_LOCAL_PATH=/etc/adblock
-AD_SH_PATH=/usr/share/adblock
-AD_WORK_PATH=/tmp/adblock
-STATUS=Y
-TAG="_ADBLOCK_RULE_"
+readonly CRON_FILE=/etc/crontabs/root
+readonly AD_LN_PATH=/tmp/dnsmasq.adblock
+readonly FMT_DT="date +'%Y-%m-%d %H:%M:%S'"
+readonly AD_LOCAL_PATH=/etc/adblock
+readonly PROG_PATH=/usr/share/adblock
+readonly AD_WORK_PATH=/tmp/adblock
+readonly TAG="_ADBLOCK_RULE_"
+_3RD_URL="$(uci -q get adblock.@adblock[0].url)"
+readonly _3RD_URL
 FWI="$(uci -q get firewall.adblock.path)"
+readonly FWI
+STATUS=Y
 enable="$(uci -q get adblock.@adblock[0].enable)"
 flash="$(uci -q get adblock.@adblock[0].flash)"
-_3RD_URL="$(uci -q get adblock.@adblock[0].url)"
 
 get_config() {
     config_get_bool cron_mode "$1" cron_mode 1
@@ -34,8 +36,8 @@ add_dns() {
         fi
         ln -sf $AD_WORK_PATH/3rd/3rd.conf $AD_LN_PATH/3rd.conf
     fi
-    [ $block_ios = 1 ] && echo 'mesu.apple.com' >$AD_LN_PATH/black.conf
-    if [ $block_cnshort = 1 ]; then
+    [ "${block_ios}" = 1 ] && echo 'mesu.apple.com' >$AD_LN_PATH/black.conf
+    if [ "${block_cnshort}" = 1 ]; then
         cat <<-EOF >>$AD_LN_PATH/black.conf
 amemv.com
 tiktokv.com
@@ -69,13 +71,17 @@ EOF
         sed -i -e 's:^:address=/:' -e 's:$:/:' $AD_LN_PATH/black.conf
         mkdir -p ${TMP_PATH}
         sort -u $AD_LN_PATH/black.conf >${TMP_PATH}/tmp_black && mv ${TMP_PATH}/tmp_black $AD_LN_PATH/black.conf
-        rm -rf ${TMP_PATH}
-        for i in $(cat $AD_LN_PATH/black.conf); do
-            if grep -wq "$i" $AD_LN_PATH/3rd.conf 2>/dev/null; then
-                sed -i -e "s#$i##" -e '/^$/d' $AD_LN_PATH/black.conf
+        rm -rf ${TMP_PATH}/tmp_black
+        cat $AD_LN_PATH/black.conf >${TMP_PATH}/tmp_black
+        while IFS= read -r line; do
+            if grep -wq "$line" $AD_LN_PATH/3rd.conf 2>/dev/null; then
+                sed -i -e "s#$line##" -e '/^$/d' $AD_LN_PATH/black.conf
             fi
-        done
-        for i in $(cat $AD_LOCAL_PATH/white.list); do sed -i -e "/\/$i\//d" -e "/\.$i\//d" $AD_LN_PATH/black.conf; done
+        done <${TMP_PATH}/tmp_black
+        rm -rf ${TMP_PATH}
+        while IFS= read -r line; do
+            sed -i -e "/\/$line\//d" -e "/\.$line\//d" $AD_LN_PATH/black.conf
+        done <$AD_LOCAL_PATH/white.list
     else
         rm -f $AD_LN_PATH/black.conf
     fi
@@ -87,7 +93,9 @@ gen() {
 
 add_rule() {
     ipset -N blockip hash:net 2>/dev/null
-    for i in $(cat $AD_LOCAL_PATH/ip.list); do ipset -! add blockip "$i"; done
+    while IFS= read -r line; do
+        ipset -! add blockip "$line"
+    done <$AD_LOCAL_PATH/ip.list
     iptables -I FORWARD -m set --match-set blockip dst -m comment --comment "$TAG" -j DROP
     iptables -I OUTPUT -m set --match-set blockip dst -m comment --comment "$TAG" -j DROP
     gen
@@ -106,10 +114,10 @@ EOF
 }
 
 add_cron() {
-    if [ $cron_mode = 1 ]; then
-        if ! grep -wq "$time_update \* \* \* .*adblock" $CRON_FILE; then
+    if [ "${cron_mode}" = 1 ]; then
+        if ! grep -wq "${time_update} \* \* \* .*adblock" $CRON_FILE; then
             grep -q adblock $CRON_FILE && sed -i '/adblock/d' $CRON_FILE
-            echo "0 $time_update * * * $AD_SH_PATH/adblock > /tmp/adupdate.log 2>&1" >>$CRON_FILE
+            echo "0 $time_update * * * $PROG_PATH/adblock > /tmp/adupdate.log 2>&1" >>$CRON_FILE
             /etc/init.d/cron restart
         fi
     else
@@ -135,49 +143,49 @@ start() {
     config_load adblock
     config_foreach get_config adblock
     if [ "$enable" = 0 ]; then
-        echo "$(eval "$FMT_DATE") [Adblock Plus+ is disabled]"
+        echo "$(eval "$FMT_DT") [Adblock Plus+ is disabled]"
         exit 1
     fi
     if [ -s $AD_LN_PATH/3rd.conf ]; then
-        echo "$(eval "$FMT_DATE") [Adblock Plus+ is running]"
+        echo "$(eval "$FMT_DT") [Adblock Plus+ is running]"
         exit 1
     fi
     is_need_addown=0
-    if [ -n "$_3RD_URL" -a ! -s /tmp/adblock/failed ]; then
-        [ "$flash" = 0 -a ! -s $AD_WORK_PATH/3rd/3rd.conf ] && is_need_addown=1
-        [ "$flash" = 1 -a ! -s $AD_LOCAL_PATH/3rd/3rd.conf ] && is_need_addown=1
+    if [ -n "${_3RD_URL}" ] && [ ! -s /tmp/adblock/failed ]; then
+        [ "${flash}" = 0 ] && [ ! -s $AD_WORK_PATH/3rd/3rd.conf ] && is_need_addown=1
+        [ "${flash}" = 1 ] && [ ! -s $AD_LOCAL_PATH/3rd/3rd.conf ] && is_need_addown=1
     fi
     if [ $is_need_addown = 1 ]; then
-        echo "$(eval "$FMT_DATE") [Download Adblock Plus Rules...]"
-        $AD_SH_PATH/addown --down >/dev/null 2>&1 &
+        echo "$(eval "$FMT_DT") [Download Adblock Plus Rules...]"
+        $PROG_PATH/addown --down >/dev/null 2>&1 &
         exit 9
     fi
-    echo "$(eval "$FMT_DATE") [Load Adblock Plus Rules]"
+    echo "$(eval "$FMT_DT") [Load Adblock Plus Rules]"
     add_dns
     add_rule
     add_cron
     if [ $STATUS = Y ]; then
-        echo "$(eval "$FMT_DATE") [Dnsmasq Change,restart dnsmasq]"
+        echo "$(eval "$FMT_DT") [Dnsmasq Change,restart dnsmasq]"
         /etc/init.d/dnsmasq restart >/dev/null 2>&1
     fi
 }
 
 stop() {
     del_rule
-    kill -9 $(ps -w | grep grep $AD_SH_PATH/adblock | grep -v grep | awk '{print$1}') 2>/dev/null
-    kill -9 $(ps -w | grep grep $AD_SH_PATH/addown | grep -v grep | awk '{print$1}') 2>/dev/null
-    kill -9 $(ps -w | grep ad_new.conf | grep -v grep | awk '{print$1}') 2>/dev/null
-    echo "$(eval "$FMT_DATE") [Stop Adblock Plus+]"
+    kill -9 "$(pgrep -f $PROG_PATH/adblock)" 2>/dev/null
+    kill -9 "$(pgrep -f $PROG_PATH/addown)" 2>/dev/null
+    kill -9 "$(pgrep -f ad_new.conf)" 2>/dev/null
+    echo "$(eval "$FMT_DT") [Stop Adblock Plus+]"
     rm -rf /tmp/dnsmasq.d/adblock.conf $AD_LN_PATH /var/lock/adblock.lock
     if [ "$(echo "$_3RD_URL" | sed 's/ /\n/g' | sort -u)" != "$(cat $AD_WORK_PATH/3rd/url 2>/dev/null)" ]; then
         rm -rf $AD_WORK_PATH/3rd
         [ -d $AD_LOCAL_PATH/3rd ] && rm -rf $AD_LOCAL_PATH/3rd
     fi
-    ([ -h $AD_WORK_PATH/3rd/url -a $flash = 0 ] || [ -z "$_3RD_URL" ]) && rm -rf $AD_WORK_PATH/3rd
-    [ "$enable" = 0 ] && del_cron
+    { { [ -h $AD_WORK_PATH/3rd/url ] && [ "${flash}" = 0 ]; } || [ -z "${_3RD_URL}" ]; } && rm -rf $AD_WORK_PATH/3rd
+    [ "${enable}" = 0 ] && del_cron
     if [ $STATUS = Y ]; then
         rm -rf $AD_WORK_PATH
-        echo "$(eval "$FMT_DATE") [Revert Dnsmasq]"
+        echo "$(eval "$FMT_DT") [Revert Dnsmasq]"
         /etc/init.d/dnsmasq restart >/dev/null 2>&1
         rm -f /tmp/adupdate.log
     fi
@@ -188,7 +196,7 @@ restart() {
         STATUS=N
         stop
         start
-        echo "$(eval "$FMT_DATE") [Restart Dnsmasq]"
+        echo "$(eval "$FMT_DT") [Restart Dnsmasq]"
         /etc/init.d/dnsmasq restart >/dev/null 2>&1
     else
         stop

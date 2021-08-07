@@ -12,16 +12,18 @@ fi
 touch $LOCK
 
 B="Download Subscribe Rules"
-FMT_DATE="date +'%Y-%m-%d %H:%M:%S'"
+FMT_DT="date +'%Y-%m-%d %H:%M:%S'"
 _3RD_URL="$(uci -q get adblock.@adblock[0].url)"
 AD_WORK_PATH=/tmp/adblock
-W="$(cat /etc/adblock/white.list)"
+WT_FILE=/etc/adblock/white.list
 
 gen() {
     grep -e "^||[^*]*^$" /tmp/adnew.conf |
         grep -Ev "^\|\|[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}*" |
         sed -e 's:||:address=/:' -e 's:\^:/:' >/tmp/ad.conf
-    for i in $W; do sed -i -e "/\/$i\//d" -e "/\.$i\//d" /tmp/ad.conf; done
+    while IFS= read -r line; do
+        sed -i -e "/\/$line\//d" -e "/\.$line\//d" /tmp/ad.conf
+    done <${WT_FILE}
     rm -f /tmp/adnew.conf
 }
 
@@ -37,7 +39,7 @@ down() {
             --no-check-certificate \
             --timeout=5 --continue --quiet -O $tmp_ad_new "$url"; do
             [ $times -le 0 ] &&
-                echo "$(eval "$FMT_DATE") [Download $url Failed]" &&
+                echo "$(eval "$FMT_DT") [Download $url Failed]" &&
                 continue 2 || times=$((times - 1))
             sleep 2
         done
@@ -60,7 +62,7 @@ down() {
         fi
         [ "$X" = "$(md5sum $down_tmp_path/3rd.conf 2>/dev/null | awk '{print$1}')" -a \
             "$Y" = "$(md5sum $down_tmp_path/host 2>/dev/null | awk '{print$1}')" ] &&
-            echo "$(eval "$FMT_DATE") [Conversion $url Failed]"
+            echo "$(eval "$FMT_DT") [Conversion $url Failed]"
         echo "$url" >>$down_tmp_path/url
         count_url=$((count_url + 1))
     done
@@ -77,15 +79,17 @@ down() {
     rm -rf ${TMP_PATH}
 
     if [ -s $down_tmp_path/3rd.conf ]; then
-        echo "$(eval "$FMT_DATE") [$B Successful]"
+        echo "$(eval "$FMT_DT") [$B Successful]"
         rm -f $tmp_ad_new $down_tmp_path/host $AD_WORK_PATH/failed
-        for i in $W; do sed -i -e "/\/$i\//d" -e "/\.$i\//d" $down_tmp_path/3rd.conf; done
+        while IFS= read -r line; do
+            sed -i -e "/\/$line\//d" -e "/\.$line\//d" $down_tmp_path/3rd.conf
+        done <${WT_FILE}
         X=$(uci -q get adblock.@adblock[0].flash)
         new_md5=$(md5sum $down_tmp_path/* | awk '{print$1}')
         [ "$X" = 0 ] && old_md5=$(md5sum $AD_WORK_PATH/3rd/* 2>/dev/null | awk '{print$1}') ||
             old_md5=$(md5sum /etc/adblock/3rd/* 2>/dev/null | awk '{print$1}')
         if [ "$new_md5" != "$old_md5" ]; then
-            [ "$1" = 1 ] || echo "$(eval "$FMT_DATE") [Subscribe Rules Need Update]"
+            [ "$1" = 1 ] || echo "$(eval "$FMT_DT") [Subscribe Rules Need Update]"
             if [ "$X" = 0 ]; then
                 rm -f $AD_WORK_PATH/3rd/*
                 cp -a $down_tmp_path "$AD_WORK_PATH"
@@ -94,10 +98,10 @@ down() {
                 cp -a $down_tmp_path /etc/adblock
             fi
         else
-            echo "$(eval "$FMT_DATE") [Subscribe Rules No Change]"
+            echo "$(eval "$FMT_DT") [Subscribe Rules No Change]"
         fi
     else
-        echo "$(eval "$FMT_DATE") [$B Failed]"
+        echo "$(eval "$FMT_DT") [$B Failed]"
         echo failed >$AD_WORK_PATH/failed
         [ "$1" = 2 ] && rm -f $LOCK && exit
     fi
@@ -120,7 +124,7 @@ esac
 
 if [ "$(uci -q get adblock.@adblock[0].enable)" = 1 ]; then
     [ -n "$_3RD_URL" ] && down
-    update_time="$(eval "${FMT_DATE}")" && echo "${update_time}" >$AD_WORK_PATH/adblock.updated
+    update_time="$(eval "${FMT_DT}")" && echo "${update_time}" >$AD_WORK_PATH/adblock.updated
 fi
 
 rm -f $LOCK
