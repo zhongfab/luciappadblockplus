@@ -1,6 +1,7 @@
 #!/bin/sh
 # Prevent repeated starts
 readonly LOCK=/var/lock/adwhite.lock
+[ "$(uci -q get adblock.@adblock[0].enable)" = 0 ] && exit 1
 [ -f $LOCK ] && exit 1
 touch $LOCK
 FMT_DT="date +'%Y-%m-%d %H:%M:%S'"
