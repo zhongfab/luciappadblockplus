@@ -112,6 +112,7 @@ down() {
 case $1 in
 addown)
     down 1
+    [ "$X" = 1 ] || rm -f $LOCK
     exit
     ;;
 down) down 2 ;;
