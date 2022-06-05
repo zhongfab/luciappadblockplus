@@ -72,7 +72,7 @@ if luci.sys.call('[ -h /tmp/adblock/3rd/url ] || exit 9') == 9 then
 end
 
 o = s:option(DynamicList, 'url', translate('Anti-AD Rules Subscribe'))
-o:value('https://cdn.jsdelivr.net/gh/privacy-protection-tools/anti-AD@master/adblock-for-dnsmasq.conf', 'anti-AD')
+o:value('https://anti-ad.net/anti-ad-for-dnsmasq.conf', 'anti-AD')
 o:value('https://cdn.jsdelivr.net/gh/small-5/ad-rules/adguard', 'AdGuard')
 o:value('https://cdn.jsdelivr.net/gh/small-5/ad-rules/dnsmasq.adblock', 'DnsmasqAdblock')
 o:value('https://cdn.jsdelivr.net/gh/small-5/ad-rules/easylistchina+easylist.txt', 'Easylistchina+Easylist')
