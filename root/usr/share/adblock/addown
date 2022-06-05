@@ -11,7 +11,7 @@ FMT_DT="date +'%Y-%m-%d %H:%M:%S'"
 _3RD_URL="$(uci -q get adblock.@adblock[0].url)"
 
 check_net() {
-    uclient-fetch --no-check-certificate --timeout=5 --quiet https://cdn.jsdelivr.net -O /dev/null
+    uclient-fetch --no-check-certificate --timeout=5 --quiet https://anti-ad.net -O /dev/null
 }
 
 mkdir -p $AD_WORK_PATH
